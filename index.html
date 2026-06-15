@@ -287,6 +287,20 @@
   .ai-stat-n{font-size:1.1rem;font-weight:700;font-family:'Space Grotesk',sans-serif;color:rgba(255,255,255,0.6)}
   .ai-stat-l{font-size:0.6rem;color:rgba(255,255,255,0.2);margin-top:0.1rem}
 
+  /* ===== 交易记录 ===== */
+  .ai-tx-list{display:flex;flex-direction:column;gap:0.2rem}
+  .ai-tx{display:flex;align-items:center;padding:0.4rem 0.6rem;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.03);border-radius:7px;font-size:0.68rem;gap:0.4rem}
+  .ai-tx .tx-date{color:rgba(255,255,255,0.15);font-size:0.55rem;width:60px;flex-shrink:0}
+  .ai-tx .tx-m{flex:1;min-width:0}
+  .ai-tx .tx-m .tm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ai-tx .tx-m .td{font-size:0.55rem;color:rgba(255,255,255,0.15)}
+  .ai-tx .tx-stake{width:50px;text-align:right;color:rgba(255,255,255,0.3);flex-shrink:0}
+  .ai-tx .tx-profit{width:60px;text-align:right;font-weight:700;font-family:'Space Grotesk',sans-serif;flex-shrink:0}
+  .ai-tx .tx-profit.gr{color:#10b981}
+  .ai-tx .tx-profit.re{color:#ef4444}
+  .ai-tx .tx-profit.gray{color:rgba(255,255,255,0.1)}
+  .ai-tx .tx-status{font-size:0.5rem;padding:0.05rem 0.25rem;border-radius:3px;flex-shrink:0}
+
   /* ===== 赛程 ===== */
   .sc-wrap{max-width:900px;margin:0 auto;padding:0 0.5rem}
   .sc-filter{display:flex;gap:0.3rem;margin-bottom:0.8rem;flex-wrap:wrap}
@@ -418,6 +432,14 @@
               <div class="ai-stat-c re"><div class="ai-stat-n" id="ai-s-wrong">0</div><div class="ai-stat-l">错误 ❌</div></div>
               <div class="ai-stat-c pu"><div class="ai-stat-n" id="ai-s-rate">0%</div><div class="ai-stat-l">正确率</div></div>
               <div class="ai-stat-c"><div class="ai-stat-n" id="ai-s-streak">0</div><div class="ai-stat-l">最长连对</div></div>
+            </div>
+          </div>
+
+          <!-- 交易记录 -->
+          <div class="ai-section">
+            <div class="ai-sec-hd">📜 交易记录 <span class="ai-badge" id="ai-tx-count">0笔</span></div>
+            <div class="ai-tx-list" id="ai-tx-list">
+              <div class="ai-empty">暂无交易记录</div>
             </div>
           </div>
         </div>
@@ -716,36 +738,82 @@ function initSchedule(){
 }
 
 // ========================================
-// AI 预测
+// AI 预测 - 真实投注模拟
 // ========================================
 const AI_PICKS = [0,0,0,null,0,0,0,1]; // 我的判断：0主胜 1平局 2客胜 null=跳过
-const AI_REASONS = [
-  '乌拉圭实力碾压，主场优势',
-  '法国队姆巴佩领衔，稳赢',
-  '英格兰阵容碾压日本',
-  '墨西哥vs意大利，难分伯仲，跳过',
-  '巴西桑巴军团不可阻挡',
-  '德国战车碾压式进攻',
-  '阿根廷梅西最后一次世界杯',
-  '葡萄牙C罗带队，防平'
-];
+const BET_STAKE = 200; // 每注 ¥200
+const INIT_CAPITAL = 1000;
+
+function getBets(){
+  try{return JSON.parse(localStorage.getItem('ai_bets'))||[];}
+  catch(e){return[];}
+}
+function saveBets(b){
+  localStorage.setItem('ai_bets',JSON.stringify(b));
+}
+
+// 下注：为今日所有预测创建投注记录
+function placeTodayBets(){
+  let bets=getBets();
+  const tk=today();
+  if(bets.some(b=>b.date===tk)) return; // 已下过
+  MATCHES.forEach((m,i)=>{
+    const pick=AI_PICKS[i];
+    if(pick===null) return;
+    bets.push({
+      id:tk+'_'+m.id, date:tk, matchId:m.id,
+      home:m.h, away:m.a, hf:m.hf, af:m.af,
+      pick, lb:['主胜','平局','客胜'][pick],
+      odds:m.o[pick].od, stake:BET_STAKE,
+      profit:0, result:null // null=待开 true=中 false=未中
+    });
+  });
+  saveBets(bets);
+}
+
+// 结算：根据赛果结算某场比赛
+function settleBet(matchId, isWin){
+  let bets=getBets();
+  const bet=bets.find(b=>b.matchId===matchId&&b.result===null);
+  if(!bet) return;
+  bet.result=isWin;
+  bet.profit=isWin?Math.round(bet.stake*bet.odds-bet.stake):-bet.stake;
+  saveBets(bets);
+  rAI();
+  // 也同步到旧系统
+  const history=getAIHistory();
+  const tk=today();
+  const day=history.find(d=>d.date===tk);
+  if(day) day.results[matchId]=isWin;
+  saveAIHistory(history);
+}
+
+// 计算当前资金
+function calcCapital(){
+  const bets=getBets();
+  let bal=INIT_CAPITAL;
+  bets.forEach(b=>{
+    if(b.result!==null) bal+=b.profit;
+  });
+  return bal;
+}
 
 function rAI(){
   const grid=document.getElementById('ai-grid'); if(!grid)return;
   grid.innerHTML='';
-  const history=getAIHistory();
-  const todayKey=today();
-  const todayData=history.find(d=>d.date===todayKey);
-  const results=todayData?todayData.results:{};
+  const bets=getBets();
+  const tk=today();
+  const todayBets=bets.filter(b=>b.date===tk);
 
   MATCHES.forEach((m,i)=>{
     const pick=AI_PICKS[i];
     if(pick===null) return;
     const lb=['主胜','平局','客胜'][pick];
-    const st=results[m.id];
+    const bet=todayBets.find(b=>b.matchId===m.id);
+    const st=bet?bet.result:null;
     let cls='ai-card pending', stTxt='⏳ 待开', stCls='ai-status-pending';
-    if(st===true){cls='ai-card correct';stTxt='✅ 正确';stCls='ai-status-correct';}
-    else if(st===false){cls='ai-card wrong';stTxt='❌ 错误';stCls='ai-status-wrong';}
+    if(st===true){cls='ai-card correct';stTxt='✅ 中奖';stCls='ai-status-correct';}
+    else if(st===false){cls='ai-card wrong';stTxt='❌ 未中';stCls='ai-status-wrong';}
 
     const card=document.createElement('div'); card.className=cls;
     card.innerHTML=`
@@ -760,111 +828,139 @@ function rAI(){
         <span class="ai-card-odds">🕐 ${m.time}</span>
       </div>
       <div class="ai-card-pick">🤖 我选 ${lb} @${m.o[pick].od.toFixed(2)}</div>
+      ${bet?`<div style="font-size:0.6rem;color:rgba(255,255,255,0.15);margin-top:0.2rem">💰 投入¥${bet.stake} ${bet.result!==null?'→ '+(bet.profit>=0?'+'+bet.profit:bet.profit):''}</div>`:''}
     `;
     grid.appendChild(card);
   });
 
-  rAIHistory();
+  rBetsHistory();
+  rTxList();
   rAIStats();
 }
 
-function rAIHistory(){
+function rBetsHistory(){
   const el=document.getElementById('ai-history');
-  const history=getAIHistory();
-  if(history.length===0){el.innerHTML='<div class="ai-empty">暂无历史记录</div>';return;}
+  const bets=getBets();
+  // 按日期分组
+  const grp={};
+  bets.forEach(b=>{
+    if(!grp[b.date]) grp[b.date]=[];
+    grp[b.date].push(b);
+  });
+  const dates=Object.keys(grp).sort();
+  if(dates.length===0){el.innerHTML='<div class="ai-empty">暂无历史记录</div>';return;}
   el.innerHTML='';
-  [...history].reverse().forEach(d=>{
-    const total=Object.keys(d.results).length;
-    const correct=Object.values(d.results).filter(v=>v===true).length;
-    const wrong=Object.values(d.results).filter(v=>v===false).length;
-    const pend=Object.values(d.results).filter(v=>v===null||v===undefined).length;
-    const rate=total>0?(correct/total*100).toFixed(1):0;
-    const day=document.createElement('div'); day.className='ai-day';
-    day.innerHTML=`
+  [...dates].reverse().forEach(d=>{
+    const dayBets=grp[d];
+    const total=dayBets.length;
+    const win=dayBets.filter(b=>b.result===true).length;
+    const lose=dayBets.filter(b=>b.result===false).length;
+    const dayP=dayBets.reduce((s,b)=>s+b.profit,0);
+    const rate=total>0?(win/total*100).toFixed(1):0;
+
+    const dayDiv=document.createElement('div'); dayDiv.className='ai-day';
+    dayDiv.innerHTML=`
       <div class="ai-day-hd">
-        <span>📅 ${d.date}</span>
-        <span class="ai-day-r ${rate>=50?'gr':'re'}">${correct}/${total} (${rate}%)</span>
+        <span>📅 ${d}</span>
+        <span class="ai-day-r ${dayP>=0?'gr':'re'}">${win}/${total} (${rate}%) 盈亏${dayP>=0?'+':''}${dayP}</span>
       </div>
       <div class="ai-day-m">
-        ${Object.entries(d.results).map(([mid,st])=>{
-          const m=MATCHES.find(x=>x.id===parseInt(mid));
-          if(!m)return'';
-          const pick=AI_PICKS[parseInt(mid)];
-          const lb=['主胜','平局','客胜'][pick];
+        ${dayBets.map(b=>{
           let cls='pend', txt='⏳';
-          if(st===true){cls='yes';txt='✅';}
-          else if(st===false){cls='no';txt='❌';}
-          return `<span class="ai-day-m-item ${cls}">${m.hf}${m.h}${txt}${lb}</span>`;
+          if(b.result===true){cls='yes';txt='✅+'+b.profit;}
+          else if(b.result===false){cls='no';txt='❌'+b.profit;}
+          return `<span class="ai-day-m-item ${cls}">${b.hf}${b.home}${txt}</span>`;
         }).join('')}
       </div>
     `;
-    el.appendChild(day);
+    el.appendChild(dayDiv);
+  });
+}
+
+function rTxList(){
+  const el=document.getElementById('ai-tx-list');
+  const bets=getBets();
+  document.getElementById('ai-tx-count').textContent=bets.length+'笔';
+  if(bets.length===0){el.innerHTML='<div class="ai-empty">暂无交易记录</div>';return;}
+  el.innerHTML='';
+  [...bets].reverse().forEach(b=>{
+    const row=document.createElement('div'); row.className='ai-tx';
+    let stTxt='⏳待开',stCls='';
+    let pCls='gray';
+    if(b.result===true){stTxt='✅中';stCls='background:rgba(16,185,129,0.08);color:#10b981';pCls='gr';}
+    else if(b.result===false){stTxt='❌未';stCls='background:rgba(239,68,68,0.08);color:#ef4444';pCls='re';}
+    const profitStr=b.result!==null?(b.profit>=0?'+'+b.profit:b.profit):'--';
+    row.innerHTML=`
+      <span class="tx-date">${b.date.slice(5)}</span>
+      <div class="tx-m">
+        <div class="tm">${b.hf}${b.home} vs ${b.af}${b.away}</div>
+        <div class="td">${b.lb} @${b.odds.toFixed(2)}</div>
+      </div>
+      <span class="tx-stake">-${b.stake}</span>
+      <span class="tx-profit ${pCls}">${profitStr}</span>
+      <span class="tx-status" style="${stCls}">${stTxt}</span>
+    `;
+    el.appendChild(row);
   });
 }
 
 function rAIStats(){
-  const history=getAIHistory();
-  let total=0,correct=0,wrong=0,streak=0,maxStreak=0;
-  history.forEach(d=>{
-    Object.values(d.results).forEach(v=>{
-      if(v===true){total++;correct++;streak++;if(streak>maxStreak)maxStreak=streak;}
-      else if(v===false){total++;wrong++;streak=0;}
-    });
-  });
+  const bets=getBets();
+  const bal=calcCapital();
+  const total=bets.filter(b=>b.result!==null).length;
+  const correct=bets.filter(b=>b.result===true).length;
+  const wrong=bets.filter(b=>b.result===false).length;
+  const totalP=bets.reduce((s,b)=>s+Math.max(0,b.profit),0);
+  const totalL=bets.reduce((s,b)=>s+Math.min(0,b.profit),0);
   const rate=total>0?(correct/total*100).toFixed(1):'0';
+  const y=(bal-INIT_CAPITAL)/INIT_CAPITAL*100;
+
+  document.getElementById('ai-balance').textContent='¥'+bal;
+  document.getElementById('ai-yield').textContent=(y>=0?'+':'')+y.toFixed(1)+'%';
+  document.getElementById('ai-acc').textContent=rate+'%';
   document.getElementById('ai-s-total').textContent=total;
   document.getElementById('ai-s-correct').textContent=correct;
   document.getElementById('ai-s-wrong').textContent=wrong;
   document.getElementById('ai-s-rate').textContent=rate+'%';
-  document.getElementById('ai-s-streak').textContent=maxStreak;
-  document.getElementById('ai-today-count').textContent=MATCHES.filter((_,i)=>AI_PICKS[i]!==null).length+'场';
 
-  // 资金追踪（模拟）
-  const bal=1000+correct*100-wrong*100;
-  document.getElementById('ai-balance').textContent='¥'+Math.max(0,bal);
-  const y=((bal-1000)/1000*100).toFixed(1);
-  document.getElementById('ai-yield').textContent=(y>=0?'+':'')+y+'%';
-  document.getElementById('ai-acc').textContent=rate+'%';
+  let streak=0,maxStreak=0;
+  bets.filter(b=>b.result!==null).sort((a,b)=>a.id.localeCompare(b.id)).forEach(b=>{
+    if(b.result===true){streak++;if(streak>maxStreak)maxStreak=streak;}
+    else streak=0;
+  });
+  document.getElementById('ai-s-streak').textContent=maxStreak;
+  document.getElementById('ai-today-count').textContent=bets.filter(b=>b.date===today()).length+'场';
 }
 
 function getAIHistory(){
-  try{
-    const d=localStorage.getItem('ai_pred_history');
-    return d?JSON.parse(d):[];
-  }catch(e){return [];}
+  try{return JSON.parse(localStorage.getItem('ai_pred_history'))||[];}
+  catch(e){return[];}
 }
-
-function saveAIHistory(data){
-  localStorage.setItem('ai_pred_history',JSON.stringify(data));
+function saveAIHistory(d){
+  localStorage.setItem('ai_pred_history',JSON.stringify(d));
 }
-
 function today(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
-// 初始化今日预测
+// 初始化：下注 + 旧系统兼容
 function initAIToday(){
+  placeTodayBets();
+  // 同步旧系统
   const history=getAIHistory();
-  const todayKey=today();
-  if(!history.find(d=>d.date===todayKey)){
+  const tk=today();
+  if(!history.find(d=>d.date===tk)){
     const results={};
-    MATCHES.forEach((m,i)=>{
-      if(AI_PICKS[i]!==null) results[m.id]=null;
-    });
-    history.push({date:todayKey,results});
+    MATCHES.forEach((m,i)=>{if(AI_PICKS[i]!==null) results[m.id]=null;});
+    history.push({date:tk,results});
     saveAIHistory(history);
   }
 }
 
-// AI预测结果评比 - 手动标记（模拟用）
-function aiSetResult(mid,correct){
-  const history=getAIHistory();
-  const todayKey=today();
-  const day=history.find(d=>d.date===todayKey);
-  if(day&&day.results[mid]!==undefined) day.results[mid]=correct;
-  saveAIHistory(history);
-  rAI();
+// 外部接口：标记赛果
+function aiSetResult(mid,isWin){
+  settleBet(mid,isWin);
 }
 
 // 初始化
