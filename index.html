@@ -237,6 +237,55 @@
       font-size:0.55rem;color:rgba(239,68,68,0.35);line-height:1.5;text-align:left;max-width:480px
     }
   </style>
+
+  /* ===== AI预测 ===== */
+  .ai-wrap{max-width:800px;margin:0 auto;padding:0 0.5rem}
+  .ai-fund{display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap}
+  .ai-fund-item{flex:1;min-width:100px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);border-radius:10px;padding:0.6rem 0.8rem;text-align:center}
+  .ai-fund-l{display:block;font-size:0.6rem;color:rgba(255,255,255,0.25);margin-bottom:0.15rem}
+  .ai-fund-v{display:block;font-size:1rem;font-weight:700;font-family:'Space Grotesk',sans-serif}
+  .ai-fund-v.og{color:#f97316}
+  .ai-fund-v.gr{color:#10b981}
+  .ai-fund-v.pu{color:#8b5cf6}
+  .ai-section{margin-bottom:1rem}
+  .ai-sec-hd{font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.4);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem}
+  .ai-badge{font-size:0.6rem;background:rgba(249,115,22,0.1);color:#f97316;padding:0.1rem 0.4rem;border-radius:4px;font-weight:500}
+  .ai-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.4rem;margin-bottom:0.5rem}
+  .ai-card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);border-radius:10px;padding:0.6rem;transition:all 0.2s}
+  .ai-card.pending{border-left:2px solid rgba(249,115,22,0.3)}
+  .ai-card.correct{border-left:2px solid #10b981;background:rgba(16,185,129,0.03)}
+  .ai-card.wrong{border-left:2px solid #ef4444;background:rgba(239,68,68,0.03)}
+  .ai-card-hd{display:flex;justify-content:space-between;align-items:center;font-size:0.65rem;color:rgba(255,255,255,0.25);margin-bottom:0.3rem}
+  .ai-card-tm{font-size:0.78rem;font-weight:600;margin-bottom:0.3rem;display:flex;align-items:center;gap:0.3rem;flex-wrap:wrap}
+  .ai-card-tm .fl{font-size:0.9rem}
+  .ai-card-pick{display:inline-flex;align-items:center;gap:0.3rem;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:5px;background:rgba(249,115,22,0.08);color:#f97316;font-weight:600;margin-top:0.2rem}
+  .ai-card-odds{font-size:0.6rem;color:rgba(255,255,255,0.2);margin-left:auto}
+  .ai-card-status{font-size:0.55rem;padding:0.1rem 0.35rem;border-radius:3px;margin-left:auto}
+  .ai-status-pending{background:rgba(249,115,22,0.08);color:#f97316}
+  .ai-status-correct{background:rgba(16,185,129,0.08);color:#10b981}
+  .ai-status-wrong{background:rgba(239,68,68,0.08);color:#ef4444}
+  .ai-empty{text-align:center;padding:1.5rem;color:rgba(255,255,255,0.04);font-size:0.75rem}
+
+  .ai-history{display:flex;flex-direction:column;gap:0.3rem}
+  .ai-day{background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.03);border-radius:8px;padding:0.5rem 0.7rem}
+  .ai-day-hd{display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:rgba(255,255,255,0.35);margin-bottom:0.3rem}
+  .ai-day-bad{display:flex;gap:0.15rem;font-size:0.6rem}
+  .ai-day-r{font-size:0.65rem;font-weight:600}
+  .ai-day-r.gr{color:#10b981}
+  .ai-day-r.re{color:#ef4444}
+  .ai-day-m{display:flex;flex-wrap:wrap;gap:0.2rem}
+  .ai-day-m-item{padding:0.1rem 0.35rem;border-radius:3px;font-size:0.6rem;display:inline-flex;align-items:center;gap:0.2rem}
+  .ai-day-m-item.yes{background:rgba(16,185,129,0.06);color:#10b981}
+  .ai-day-m-item.no{background:rgba(239,68,68,0.06);color:#ef4444}
+  .ai-day-m-item.pend{background:rgba(249,115,22,0.06);color:#f97316}
+
+  .ai-stats{display:flex;gap:0.4rem;flex-wrap:wrap}
+  .ai-stat-c{flex:1;min-width:80px;text-align:center;padding:0.6rem 0.3rem;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.03);border-radius:8px}
+  .ai-stat-c.gr .ai-stat-n{color:#10b981}
+  .ai-stat-c.re .ai-stat-n{color:#ef4444}
+  .ai-stat-c.pu .ai-stat-n{color:#8b5cf6}
+  .ai-stat-n{font-size:1.1rem;font-weight:700;font-family:'Space Grotesk',sans-serif;color:rgba(255,255,255,0.6)}
+  .ai-stat-l{font-size:0.6rem;color:rgba(255,255,255,0.2);margin-top:0.1rem}
 </head>
 <body>
 <div class="app">
@@ -247,6 +296,7 @@
     <div class="nav-menu">
       <div class="nav-item on" data-tab="matches"><span class="icon">⚽</span> 比赛投注</div>
       <div class="nav-item" data-tab="details"><span class="icon">💰</span> 投注明细</div>
+      <div class="nav-item" data-tab="aipick"><span class="icon">🤖</span> AI预测</div>
       <div class="nav-divider"></div>
       <div class="nav-item" data-tab="about"><span class="icon">⚖️</span> 免责声明</div>
     </div>
@@ -300,6 +350,45 @@
         <div class="btns">
           <button class="btn btn-fire" onclick="doBet()">🔥 确认投注</button>
           <button class="btn btn-ghost" onclick="clearAll()">清空</button>
+        </div>
+      </div>
+
+      <!-- TAB: AI预测 -->
+      <div class="tab-panel" id="panel-aipick">
+        <div class="ai-wrap">
+          <!-- 资金概况 -->
+          <div class="ai-fund">
+            <div class="ai-fund-item"><span class="ai-fund-l">初始本金</span><span class="ai-fund-v">¥1,000</span></div>
+            <div class="ai-fund-item"><span class="ai-fund-l">当前资金</span><span class="ai-fund-v og" id="ai-balance">¥1,000</span></div>
+            <div class="ai-fund-item"><span class="ai-fund-l">总收益率</span><span class="ai-fund-v gr" id="ai-yield">+0.0%</span></div>
+            <div class="ai-fund-item"><span class="ai-fund-l">正确率</span><span class="ai-fund-v pu" id="ai-acc">0%</span></div>
+          </div>
+
+          <!-- 今日预测 -->
+          <div class="ai-section">
+            <div class="ai-sec-hd">📋 今日预测 <span class="ai-badge" id="ai-today-count">8场</span></div>
+            <div class="ai-grid" id="ai-grid"></div>
+          </div>
+
+          <!-- 历史表现 -->
+          <div class="ai-section">
+            <div class="ai-sec-hd">📊 预测历史</div>
+            <div class="ai-history" id="ai-history">
+              <div class="ai-empty">暂无历史记录</div>
+            </div>
+          </div>
+
+          <!-- 统计总结 -->
+          <div class="ai-section">
+            <div class="ai-sec-hd">📈 数据统计</div>
+            <div class="ai-stats" id="ai-stats">
+              <div class="ai-stat-c"><div class="ai-stat-n" id="ai-s-total">0</div><div class="ai-stat-l">总预测</div></div>
+              <div class="ai-stat-c gr"><div class="ai-stat-n" id="ai-s-correct">0</div><div class="ai-stat-l">正确 ✅</div></div>
+              <div class="ai-stat-c re"><div class="ai-stat-n" id="ai-s-wrong">0</div><div class="ai-stat-l">错误 ❌</div></div>
+              <div class="ai-stat-c pu"><div class="ai-stat-n" id="ai-s-rate">0%</div><div class="ai-stat-l">正确率</div></div>
+              <div class="ai-stat-c"><div class="ai-stat-n" id="ai-s-streak">0</div><div class="ai-stat-l">最长连对</div></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -432,8 +521,9 @@ document.querySelectorAll('.nav-item').forEach(item=>{
     const t=item.dataset.tab;
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('on'));item.classList.add('on');
     document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('on'));document.getElementById(`panel-${t}`).classList.add('on');
-    cur=t; const ti={'matches':'⚽ 比赛投注','details':'💰 投注明细','about':'⚖️ 免责声明'};
+    cur=t; const ti={'matches':'⚽ 比赛投注','details':'💰 投注明细','aipick':'🤖 AI预测','about':'⚖️ 免责声明'};
     document.getElementById('page-title').textContent=ti[t]||'';
+    if(t==='aipick') rAI();
   });
 });
 
@@ -448,8 +538,159 @@ function doBet(){
 }
 
 // ========================================
-// INIT
+// AI 预测
 // ========================================
+const AI_PICKS = [0,0,0,null,0,0,0,1]; // 我的判断：0主胜 1平局 2客胜 null=跳过
+const AI_REASONS = [
+  '乌拉圭实力碾压，主场优势',
+  '法国队姆巴佩领衔，稳赢',
+  '英格兰阵容碾压日本',
+  '墨西哥vs意大利，难分伯仲，跳过',
+  '巴西桑巴军团不可阻挡',
+  '德国战车碾压式进攻',
+  '阿根廷梅西最后一次世界杯',
+  '葡萄牙C罗带队，防平'
+];
+
+function rAI(){
+  const grid=document.getElementById('ai-grid'); if(!grid)return;
+  grid.innerHTML='';
+  const history=getAIHistory();
+  const todayKey=today();
+  const todayData=history.find(d=>d.date===todayKey);
+  const results=todayData?todayData.results:{};
+
+  MATCHES.forEach((m,i)=>{
+    const pick=AI_PICKS[i];
+    if(pick===null) return;
+    const lb=['主胜','平局','客胜'][pick];
+    const st=results[m.id];
+    let cls='ai-card pending', stTxt='⏳ 待开', stCls='ai-status-pending';
+    if(st===true){cls='ai-card correct';stTxt='✅ 正确';stCls='ai-status-correct';}
+    else if(st===false){cls='ai-card wrong';stTxt='❌ 错误';stCls='ai-status-wrong';}
+
+    const card=document.createElement('div'); card.className=cls;
+    card.innerHTML=`
+      <div class="ai-card-hd">
+        <span>#${i+1} ${m.league}</span>
+        <span class="ai-card-status ${stCls}">${stTxt}</span>
+      </div>
+      <div class="ai-card-tm">
+        <span class="fl">${m.hf}</span>${m.h}
+        <span style="color:rgba(255,255,255,0.2);font-size:0.6rem">vs</span>
+        ${m.a}<span class="fl">${m.af}</span>
+        <span class="ai-card-odds">🕐 ${m.time}</span>
+      </div>
+      <div class="ai-card-pick">🤖 我选 ${lb} @${m.o[pick].od.toFixed(2)}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  rAIHistory();
+  rAIStats();
+}
+
+function rAIHistory(){
+  const el=document.getElementById('ai-history');
+  const history=getAIHistory();
+  if(history.length===0){el.innerHTML='<div class="ai-empty">暂无历史记录</div>';return;}
+  el.innerHTML='';
+  [...history].reverse().forEach(d=>{
+    const total=Object.keys(d.results).length;
+    const correct=Object.values(d.results).filter(v=>v===true).length;
+    const wrong=Object.values(d.results).filter(v=>v===false).length;
+    const pend=Object.values(d.results).filter(v=>v===null||v===undefined).length;
+    const rate=total>0?(correct/total*100).toFixed(1):0;
+    const day=document.createElement('div'); day.className='ai-day';
+    day.innerHTML=`
+      <div class="ai-day-hd">
+        <span>📅 ${d.date}</span>
+        <span class="ai-day-r ${rate>=50?'gr':'re'}">${correct}/${total} (${rate}%)</span>
+      </div>
+      <div class="ai-day-m">
+        ${Object.entries(d.results).map(([mid,st])=>{
+          const m=MATCHES.find(x=>x.id===parseInt(mid));
+          if(!m)return'';
+          const pick=AI_PICKS[parseInt(mid)];
+          const lb=['主胜','平局','客胜'][pick];
+          let cls='pend', txt='⏳';
+          if(st===true){cls='yes';txt='✅';}
+          else if(st===false){cls='no';txt='❌';}
+          return `<span class="ai-day-m-item ${cls}">${m.hf}${m.h}${txt}${lb}</span>`;
+        }).join('')}
+      </div>
+    `;
+    el.appendChild(day);
+  });
+}
+
+function rAIStats(){
+  const history=getAIHistory();
+  let total=0,correct=0,wrong=0,streak=0,maxStreak=0;
+  history.forEach(d=>{
+    Object.values(d.results).forEach(v=>{
+      if(v===true){total++;correct++;streak++;if(streak>maxStreak)maxStreak=streak;}
+      else if(v===false){total++;wrong++;streak=0;}
+    });
+  });
+  const rate=total>0?(correct/total*100).toFixed(1):'0';
+  document.getElementById('ai-s-total').textContent=total;
+  document.getElementById('ai-s-correct').textContent=correct;
+  document.getElementById('ai-s-wrong').textContent=wrong;
+  document.getElementById('ai-s-rate').textContent=rate+'%';
+  document.getElementById('ai-s-streak').textContent=maxStreak;
+  document.getElementById('ai-today-count').textContent=MATCHES.filter((_,i)=>AI_PICKS[i]!==null).length+'场';
+
+  // 资金追踪（模拟）
+  const bal=1000+correct*100-wrong*100;
+  document.getElementById('ai-balance').textContent='¥'+Math.max(0,bal);
+  const y=((bal-1000)/1000*100).toFixed(1);
+  document.getElementById('ai-yield').textContent=(y>=0?'+':'')+y+'%';
+  document.getElementById('ai-acc').textContent=rate+'%';
+}
+
+function getAIHistory(){
+  try{
+    const d=localStorage.getItem('ai_pred_history');
+    return d?JSON.parse(d):[];
+  }catch(e){return [];}
+}
+
+function saveAIHistory(data){
+  localStorage.setItem('ai_pred_history',JSON.stringify(data));
+}
+
+function today(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+// 初始化今日预测
+function initAIToday(){
+  const history=getAIHistory();
+  const todayKey=today();
+  if(!history.find(d=>d.date===todayKey)){
+    const results={};
+    MATCHES.forEach((m,i)=>{
+      if(AI_PICKS[i]!==null) results[m.id]=null;
+    });
+    history.push({date:todayKey,results});
+    saveAIHistory(history);
+  }
+}
+
+// AI预测结果评比 - 手动标记（模拟用）
+function aiSetResult(mid,correct){
+  const history=getAIHistory();
+  const todayKey=today();
+  const day=history.find(d=>d.date===todayKey);
+  if(day&&day.results[mid]!==undefined) day.results[mid]=correct;
+  saveAIHistory(history);
+  rAI();
+}
+
+// 初始化
+initAIToday();
 r();
 </script>
 </body>
