@@ -330,6 +330,8 @@
   .sc-pick-wrong{background:rgba(239,68,68,0.08);color:#ef4444}
   .sc-pick-pending{background:rgba(249,115,22,0.06);color:#f97316}
   .sc-m-venue{font-size:0.55rem;color:rgba(255,255,255,0.08);margin-left:auto;flex-shrink:0;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 </head>
 <body>
 <div class="app">
@@ -586,7 +588,7 @@ document.querySelectorAll('.nav-item').forEach(item=>{
     document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('on'));document.getElementById(`panel-${t}`).classList.add('on');
     cur=t; const ti={'matches':'⚽ 比赛投注','details':'💰 投注明细','aipick':'🤖 AI预测','schedule':'📅 赛程','about':'⚖️ 免责声明'};
     document.getElementById('page-title').textContent=ti[t]||'';
-    if(t==='aipick') rAI();
+    if(t==='aipick'){autoSettleBets();rAI();}
     if(t==='schedule') rSchedule(document.querySelector('.sc-f-btn.on')?.dataset?.group||'all');
   });
 });
@@ -944,7 +946,74 @@ function today(){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
-// 初始化：下注 + 旧系统兼容
+// 自动结算：从赛程数据中检测已结束比赛并结算
+let _settleCount = 0;
+function autoSettleBets(){
+  const bets=getBets();
+  let settled=0;
+  Object.values(SCHEDULE).forEach(group=>{
+    group.forEach(m=>{
+      if(m.s!=='done'||m.hs===undefined) return;
+      const bet=bets.find(b=>b.result===null&&(
+        (b.home===m.h&&b.away===m.a)||(b.home===m.a&&b.away===m.h)
+      ));
+      if(!bet) return;
+      // 确定实际结果：0主胜 1平局 2客胜
+      const actual=m.hs>m.as?0:m.hs===m.as?1:2;
+      const isWin=actual===bet.pick;
+      bet.result=isWin;
+      bet.profit=isWin?Math.round(bet.stake*bet.odds-bet.stake):-bet.stake;
+      settled++;
+    });
+  });
+  if(settled>0){
+    saveBets(bets);
+    _settleCount=settled;
+  }
+}
+
+// 旧数据迁移：清理冲突的旧格式
+function migrateOldData(){
+  try{
+    const old=localStorage.getItem('ai_pred_history');
+    if(old){
+      const parsed=JSON.parse(old);
+      // 如果旧数据里有已结算的结果，但新系统没有，尝试同步
+      const bets=getBets();
+      let changed=false;
+      parsed.forEach(day=>{
+        Object.entries(day.results||{}).forEach(([mid,res])=>{
+          if(res===true||res===false){
+            const bet=bets.find(b=>b.matchId===parseInt(mid)&&b.date===day.date&&b.result===null);
+            if(bet){
+              bet.result=res;
+              bet.profit=res?Math.round(bet.stake*bet.odds-bet.stake):-bet.stake;
+              changed=true;
+            }
+          }
+        });
+      });
+      if(changed) saveBets(bets);
+    }
+  }catch(e){/* ignore */}
+
+  // 清理旧的冗余 key
+  try{
+    ['ai_pred_results','ai_picks'].forEach(k=>localStorage.removeItem(k));
+  }catch(e){}
+}
+
+function showSettleNotice(count){
+  if(count<=0) return;
+  const notice=document.createElement('div');
+  notice.style.cssText='position:fixed;bottom:20px;right:20px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:0.6rem 1rem;border-radius:10px;font-size:0.75rem;font-weight:600;z-index:999;box-shadow:0 4px 20px rgba(16,185,129,0.3);animation:fadeInUp 0.3s ease';
+  notice.textContent='🧹 自动结算 '+count+' 场比赛';
+  document.body.appendChild(notice);
+  setTimeout(()=>{notice.style.opacity='0';notice.style.transition='opacity 0.5s';setTimeout(()=>notice.remove(),500);},3000);
+}
+
+// ========================================
+// 初始化：下注 + 自动结算 + 迁移
 function initAIToday(){
   placeTodayBets();
   // 同步旧系统
@@ -964,6 +1033,9 @@ function aiSetResult(mid,isWin){
 }
 
 // 初始化
+migrateOldData();
+autoSettleBets();
+if(_settleCount>0) showSettleNotice(_settleCount);
 initAIToday();
 initSchedule();
 r();
