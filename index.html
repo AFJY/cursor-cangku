@@ -286,6 +286,36 @@
   .ai-stat-c.pu .ai-stat-n{color:#8b5cf6}
   .ai-stat-n{font-size:1.1rem;font-weight:700;font-family:'Space Grotesk',sans-serif;color:rgba(255,255,255,0.6)}
   .ai-stat-l{font-size:0.6rem;color:rgba(255,255,255,0.2);margin-top:0.1rem}
+
+  /* ===== 赛程 ===== */
+  .sc-wrap{max-width:900px;margin:0 auto;padding:0 0.5rem}
+  .sc-filter{display:flex;gap:0.3rem;margin-bottom:0.8rem;flex-wrap:wrap}
+  .sc-f-btn{padding:0.3rem 0.7rem;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.01);color:rgba(255,255,255,0.2);font-size:0.7rem;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s}
+  .sc-f-btn:hover{background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.4)}
+  .sc-f-btn.on{background:rgba(249,115,22,0.08);border-color:rgba(249,115,22,0.15);color:#f97316}
+  .sc-day{background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.03);border-radius:10px;margin-bottom:0.5rem;overflow:hidden}
+  .sc-day-hd{padding:0.5rem 0.7rem;font-size:0.7rem;font-weight:600;color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.02);display:flex;align-items:center;gap:0.4rem}
+  .sc-day-hd .badge{font-size:0.55rem;padding:0.1rem 0.35rem;border-radius:3px;background:rgba(249,115,22,0.06);color:#f97316}
+  .sc-match{display:flex;align-items:center;padding:0.45rem 0.7rem;border-bottom:1px solid rgba(255,255,255,0.02);font-size:0.72rem;transition:background 0.1s}
+  .sc-match:last-child{border-bottom:none}
+  .sc-match:hover{background:rgba(255,255,255,0.01)}
+  .sc-m-time{width:45px;font-size:0.65rem;color:rgba(255,255,255,0.2);flex-shrink:0}
+  .sc-m-group{width:40px;font-size:0.55rem;color:rgba(255,255,255,0.12);flex-shrink:0}
+  .sc-m-teams{flex:1;display:flex;align-items:center;gap:0.3rem}
+  .sc-m-teams .fl{font-size:0.9rem}
+  .sc-m-vs{color:rgba(255,255,255,0.15);font-size:0.55rem;margin:0 0.3rem}
+  .sc-m-score{font-weight:700;font-size:0.8rem;font-family:'Space Grotesk',sans-serif;min-width:30px;text-align:center}
+  .sc-m-score.green{color:#10b981}
+  .sc-m-score.gray{color:rgba(255,255,255,0.1)}
+  .sc-m-status{font-size:0.55rem;padding:0.1rem 0.35rem;border-radius:3px;margin-left:0.4rem;flex-shrink:0}
+  .sc-st-done{background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.15)}
+  .sc-st-upcoming{background:rgba(249,115,22,0.06);color:#f97316}
+  .sc-st-live{background:rgba(239,68,68,0.08);color:#ef4444}
+  .sc-m-pick{font-size:0.55rem;padding:0.05rem 0.3rem;border-radius:3px;margin-left:0.3rem;flex-shrink:0}
+  .sc-pick-correct{background:rgba(16,185,129,0.08);color:#10b981}
+  .sc-pick-wrong{background:rgba(239,68,68,0.08);color:#ef4444}
+  .sc-pick-pending{background:rgba(249,115,22,0.06);color:#f97316}
+  .sc-m-venue{font-size:0.55rem;color:rgba(255,255,255,0.08);margin-left:auto;flex-shrink:0;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </head>
 <body>
 <div class="app">
@@ -297,6 +327,7 @@
       <div class="nav-item on" data-tab="matches"><span class="icon">⚽</span> 比赛投注</div>
       <div class="nav-item" data-tab="details"><span class="icon">💰</span> 投注明细</div>
       <div class="nav-item" data-tab="aipick"><span class="icon">🤖</span> AI预测</div>
+      <div class="nav-item" data-tab="schedule"><span class="icon">📅</span> 赛程</div>
       <div class="nav-divider"></div>
       <div class="nav-item" data-tab="about"><span class="icon">⚖️</span> 免责声明</div>
     </div>
@@ -389,6 +420,16 @@
               <div class="ai-stat-c"><div class="ai-stat-n" id="ai-s-streak">0</div><div class="ai-stat-l">最长连对</div></div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- TAB: 赛程 -->
+      <div class="tab-panel" id="panel-schedule">
+        <div class="sc-wrap">
+          <div class="sc-filter" id="sc-filter">
+            <button class="sc-f-btn on" data-group="all">全部</button>
+          </div>
+          <div id="sc-list"></div>
         </div>
       </div>
 
@@ -521,9 +562,10 @@ document.querySelectorAll('.nav-item').forEach(item=>{
     const t=item.dataset.tab;
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('on'));item.classList.add('on');
     document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('on'));document.getElementById(`panel-${t}`).classList.add('on');
-    cur=t; const ti={'matches':'⚽ 比赛投注','details':'💰 投注明细','aipick':'🤖 AI预测','about':'⚖️ 免责声明'};
+    cur=t; const ti={'matches':'⚽ 比赛投注','details':'💰 投注明细','aipick':'🤖 AI预测','schedule':'📅 赛程','about':'⚖️ 免责声明'};
     document.getElementById('page-title').textContent=ti[t]||'';
     if(t==='aipick') rAI();
+    if(t==='schedule') rSchedule(document.querySelector('.sc-f-btn.on')?.dataset?.group||'all');
   });
 });
 
@@ -535,6 +577,142 @@ function doBet(){
   const all=gA(); if(all.length===0){alert('请先选择投注项！');return;}
   let d=''; Object.entries(sel).forEach(([mid,ois])=>{const m=MATCHES.find(x=>x.id===parseInt(mid));if(!m)return;d+=`  ${m.hf}${m.h} vs ${m.af}${m.a} → ${ois.map(i=>['主胜','平局','客胜'][i]).join('、')}\n`;});
   alert(`🔥 竞彩足球 · 投注确认\n${'═'.repeat(30)}\n\n📋 所选：\n${d}\n🔗 过关：${pass.length>0?pass.join('、'):'单关'}\n${'─'.repeat(30)}\n📊 注数：${document.getElementById('d-zhushu').textContent}\n💰 金额：${document.getElementById('d-jine').textContent}\n🏆 最高：${document.getElementById('d-max').textContent}\n📉 最低：${document.getElementById('d-min').textContent}\n📈 收益率：${document.getElementById('h-rate').textContent}\n\n${'═'.repeat(30)}\n⚠️ 模拟计算仅供参考\n理性投注，享受足球！⚽`);
+}
+
+// ========================================
+// 赛程
+// ========================================
+const SCHEDULE = {
+  '小组A':[
+    {d:'06月11日',t:'09:00',h:'墨西哥',hf:'🇲🇽',a:'南非',af:'🇿🇦',v:'墨西哥城 · 阿兹特克',s:'done',hs:2,as:0},
+    {d:'06月15日',t:'21:00',h:'南非',hf:'🇿🇦',a:'乌拉圭',af:'🇺🇾',v:'墨西哥城 · 阿兹特克',s:'upcoming'},
+    {d:'06月19日',t:'18:00',h:'墨西哥',hf:'🇲🇽',a:'乌拉圭',af:'🇺🇾',v:'墨西哥城 · 阿兹特克',s:'upcoming'},
+  ],
+  '小组B':[
+    {d:'06月15日',t:'20:00',h:'巴西',hf:'🇧🇷',a:'摩洛哥',af:'🇲🇦',v:'纽约 · 大都会',s:'upcoming'},
+    {d:'06月17日',t:'09:00',h:'阿根廷',hf:'🇦🇷',a:'阿尔及利亚',af:'🇩🇿',v:'迈阿密 · 硬石',s:'upcoming'},
+    {d:'06月22日',t:'15:00',h:'巴西',hf:'🇧🇷',a:'阿根廷',af:'🇦🇷',v:'纽约 · 大都会',s:'upcoming'},
+  ],
+  '小组C':[
+    {d:'06月14日',t:'17:00',h:'德国',hf:'🇩🇪',a:'库拉索',af:'🇨🇼',v:'休斯顿 · NRG',s:'done',hs:7,as:0},
+    {d:'06月18日',t:'15:00',h:'德国',hf:'🇩🇪',a:'厄瓜多尔',af:'🇪🇨',v:'休斯顿 · NRG',s:'upcoming'},
+    {d:'06月23日',t:'12:00',h:'库拉索',hf:'🇨🇼',a:'厄瓜多尔',af:'🇪🇨',v:'休斯顿 · NRG',s:'upcoming'},
+  ],
+  '小组D':[
+    {d:'06月14日',t:'23:00',h:'科特迪瓦',hf:'🇨🇮',a:'厄瓜多尔',af:'🇪🇨',v:'洛杉矶 · SoFi',s:'done',hs:0,as:0},
+    {d:'06月16日',t:'00:00',h:'西班牙',hf:'🇪🇸',a:'佛得角',af:'🇨🇻',v:'洛杉矶 · SoFi',s:'upcoming'},
+    {d:'06月20日',t:'15:00',h:'西班牙',hf:'🇪🇸',a:'科特迪瓦',af:'🇨🇮',v:'旧金山 · 李维斯',s:'upcoming'},
+  ],
+  '小组E':[
+    {d:'06月15日',t:'04:00',h:'荷兰',hf:'🇳🇱',a:'日本',af:'🇯🇵',v:'休斯顿 · NRG',s:'done',hs:2,as:2},
+    {d:'06月15日',t:'10:00',h:'瑞典',hf:'🇸🇪',a:'突尼斯',af:'🇹🇳',v:'休斯顿 · NRG',s:'done',hs:5,as:1},
+    {d:'06月21日',t:'00:00',h:'日本',hf:'🇯🇵',a:'突尼斯',af:'🇹🇳',v:'休斯顿 · NRG',s:'upcoming'},
+    {d:'06月27日',t:'09:00',h:'瑞典',hf:'🇸🇪',a:'日本',af:'🇯🇵',v:'休斯顿 · NRG',s:'upcoming'},
+    {d:'06月27日',t:'09:00',h:'突尼斯',hf:'🇹🇳',a:'荷兰',af:'🇳🇱',v:'休斯顿 · NRG',s:'upcoming'},
+  ],
+  '小组F':[
+    {d:'06月16日',t:'03:00',h:'比利时',hf:'🇧🇪',a:'埃及',af:'🇪🇬',v:'费城 · 林肯金融',s:'upcoming'},
+    {d:'06月16日',t:'09:00',h:'伊朗',hf:'🇮🇷',a:'新西兰',af:'🇳🇿',v:'费城 · 林肯金融',s:'upcoming'},
+    {d:'06月21日',t:'06:00',h:'比利时',hf:'🇧🇪',a:'伊朗',af:'🇮🇷',v:'费城 · 林肯金融',s:'upcoming'},
+  ],
+  '小组G':[
+    {d:'06月16日',t:'00:00',h:'西班牙',hf:'🇪🇸',a:'佛得角',af:'🇨🇻',v:'洛杉矶 · SoFi',s:'upcoming'},
+    {d:'06月20日',t:'21:00',h:'比利时',hf:'🇧🇪',a:'伊朗',af:'🇮🇷',v:'费城 · 林肯金融',s:'upcoming'},
+    {d:'06月24日',t:'18:00',h:'埃及',hf:'🇪🇬',a:'新西兰',af:'🇳🇿',v:'费城 · 林肯金融',s:'upcoming'},
+  ],
+  '小组H':[
+    {d:'06月17日',t:'01:00',h:'葡萄牙',hf:'🇵🇹',a:'刚果金',af:'🇨🇩',v:'波士顿 · 吉列',s:'upcoming'},
+    {d:'06月19日',t:'15:00',h:'法国',hf:'🇫🇷',a:'塞内加尔',af:'🇸🇳',v:'波士顿 · 吉列',s:'upcoming'},
+    {d:'06月24日',t:'15:00',h:'葡萄牙',hf:'🇵🇹',a:'法国',af:'🇫🇷',v:'波士顿 · 吉列',s:'upcoming'},
+  ],
+};
+
+const GROUP_ORDER = ['小组A','小组B','小组C','小组D','小组E','小组F','小组G','小组H'];
+
+function rSchedule(filter){
+  filter=filter||'all';
+  const el=document.getElementById('sc-list'); if(!el)return;
+  el.innerHTML='';
+
+  // 收集所有比赛
+  let all=[];
+  GROUP_ORDER.forEach(g=>{
+    (SCHEDULE[g]||[]).forEach(m=>{
+      all.push({...m,group:g});
+    });
+  });
+
+  // 过滤
+  if(filter!=='all') all=all.filter(m=>m.group===filter);
+
+  // 按日期排序
+  const dates=[...new Set(all.map(m=>m.d))].sort();
+
+  dates.forEach(date=>{
+    const dayMatches=all.filter(m=>m.d===date);
+    const total=dayMatches.length;
+    const done=dayMatches.filter(m=>m.s==='done').length;
+
+    const dayDiv=document.createElement('div'); dayDiv.className='sc-day';
+    dayDiv.innerHTML=`<div class="sc-day-hd">📅 ${date}<span class="badge">${done}/${total} 已结束</span></div>`;
+    const body=document.createElement('div');
+
+    dayMatches.forEach(m=>{
+      const row=document.createElement('div'); row.className='sc-match';
+
+      let stTxt='⏳未开始',stCls='sc-st-upcoming';
+      let scoreHtml='<span class="sc-m-score gray">-</span>';
+      if(m.s==='done'){stTxt='✅已结束';stCls='sc-st-done';scoreHtml=`<span class="sc-m-score green">${m.hs}:${m.as}</span>`;
+      }else if(m.s==='live'){stTxt='🔴进行中';stCls='sc-st-live';}
+
+      // AI预测标记
+      let pickHtml='';
+      const mainMatchIdx=MATCHES.findIndex(x=>x.h===m.h&&x.a===m.a);
+      if(mainMatchIdx>=0&&AI_PICKS[mainMatchIdx]!==null){
+        const pick=AI_PICKS[mainMatchIdx];
+        const lb=['主胜','平局','客胜'][pick];
+        let pCls='sc-pick-pending';
+        if(m.s==='done'){
+          const actual=m.hs>m.as?0:m.hs===m.as?1:2;
+          pCls=actual===pick?'sc-pick-correct':'sc-pick-wrong';
+        }
+        pickHtml=`<span class="sc-m-pick ${pCls}">🤖${lb}</span>`;
+      }
+
+      row.innerHTML=`
+        <span class="sc-m-time">${m.t}</span>
+        <span class="sc-m-group">${m.group}</span>
+        <span class="sc-m-teams"><span class="fl">${m.hf}</span>${m.h}<span class="sc-m-vs">vs</span>${m.a}<span class="fl">${m.af}</span></span>
+        ${scoreHtml}
+        ${pickHtml}
+        <span class="sc-m-status ${stCls}">${stTxt}</span>
+        <span class="sc-m-venue">${m.v||''}</span>
+      `;
+      body.appendChild(row);
+    });
+
+    dayDiv.appendChild(body);
+    el.appendChild(dayDiv);
+  });
+
+  // 更新过滤器
+  document.querySelectorAll('.sc-f-btn').forEach(b=>{
+    b.classList.toggle('on',b.dataset.group===filter);
+  });
+}
+
+// 初始化赛程过滤
+function initSchedule(){
+  const fb=document.getElementById('sc-filter');
+  fb.innerHTML='<button class="sc-f-btn on" data-group="all">📋 全部</button>';
+  GROUP_ORDER.forEach(g=>{
+    const btn=document.createElement('button'); btn.className='sc-f-btn'; btn.dataset.group=g;
+    btn.textContent=g; fb.appendChild(btn);
+  });
+  fb.addEventListener('click',e=>{
+    if(e.target.classList.contains('sc-f-btn')) rSchedule(e.target.dataset.group);
+  });
+  rSchedule('all');
 }
 
 // ========================================
@@ -691,6 +869,7 @@ function aiSetResult(mid,correct){
 
 // 初始化
 initAIToday();
+initSchedule();
 r();
 </script>
 </body>
