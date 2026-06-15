@@ -3,6 +3,12 @@ name: 自动部署
 on:
   push:
     branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
   deploy:
@@ -10,17 +16,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 如果配置了 Vercel Deploy Hook，自动触发 Vercel 重新部署
-      - name: 部署到 Vercel
-        if: ${{ secrets.VERCEL_DEPLOY_HOOK != '' }}
+      # 尝试自动启用 GitHub Pages
+      - name: 启用 GitHub Pages
+        continue-on-error: true
         run: |
-          curl -s -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}" 
-          echo "✅ Vercel 部署已触发"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages")
+          
+          if [ "$STATUS" = "404" ]; then
+            echo "🔄 Pages 未启用，尝试创建..."
+            curl -s -X POST \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/pages" \
+              -d '{"source":{"branch":"master","path":"/"}}'
+          else
+            echo "✅ Pages 状态: $STATUS"
+          fi
 
-      # 如果开启了 GitHub Pages，也会更新 Pages
-      - name: 上传到 GitHub Pages
-        if: ${{ vars.ENABLE_PAGES == 'true' }}
+      # 部署到 GitHub Pages
+      - name: 部署到 GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .
+          publish_branch: gh-pages
+
+      # 如果配了 Vercel Deploy Hook，也触发 Vercel
+      - name: 部署到 Vercel（可选）
+        if: ${{ secrets.VERCEL_DEPLOY_HOOK != '' }}
+        run: curl -s -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
